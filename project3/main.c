@@ -5,23 +5,42 @@
 #define NUM_FRAMES 256
 #define PAGE_SIZE 256
 #define TLB_SIZE 16
-#define BACKING_STORE_FILE "BACKING_STORE.bin"
 
 // Define TLB data structures (e.g., TLBEntry structure and TLB array).
+typedef struct{
+    int pageNumber;
+    int frameNumber;
+    bool valid;
+} TLBEntry;
+
+TLBEntry TLB[TLB_SIZE];
 
 // Function to initialize the TLB.
 void initializeTLB() {
-    // Implement TLB initialization here.
+    for (int i = 0; i < TLB_SIZE; i++)
+    {
+        TLB[i].valid = false;
+    }
 }
 
 // Function to check if a TLB entry exists for a page number.
 bool isTLBHit(int pageNumber) {
-    // Implement TLB hit check here.
+    for (int i = 0; i < TLB_SIZE; i++) {
+            if (TLB[i].valid && TLB[i].pageNumber == pageNumber) {
+                return true;
+            }
+        }
+        return false;
 }
 
 // Function to get a frame number from the TLB for a page number.
 int getFrameFromTLB(int pageNumber) {
-    // Implement getting frame from the TLB here.
+    for (int i = 0; i < TLB_SIZE; i++) {
+            if (TLB[i].valid && TLB[i].pageNumber == pageNumber) {
+                return TLB[i].frameNumber;
+            }
+        }
+        return -1; // Not found in the TLB
 }
 
 // Function to update the TLB.
