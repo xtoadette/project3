@@ -27,6 +27,8 @@
 		ED0A529A2AF192D40047F934 /* project3 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = project3; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED0A529D2AF192D40047F934 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		ED0A52A42AF279C10047F934 /* main_pr.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main_pr.c; sourceTree = "<group>"; };
+		ED20DAD52AFAC241004E4BB4 /* addresses.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = addresses.txt; sourceTree = "<group>"; };
+		ED20DAD62AFAC241004E4BB4 /* BACKING_STORE.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = BACKING_STORE.bin; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,6 +61,8 @@
 		ED0A529C2AF192D40047F934 /* project3 */ = {
 			isa = PBXGroup;
 			children = (
+				ED20DAD52AFAC241004E4BB4 /* addresses.txt */,
+				ED20DAD62AFAC241004E4BB4 /* BACKING_STORE.bin */,
 				ED0A529D2AF192D40047F934 /* main.c */,
 				ED0A52A42AF279C10047F934 /* main_pr.c */,
 			);
