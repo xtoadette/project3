@@ -9,6 +9,10 @@
 #define PHYSICAL_MEMORY_SIZE (PAGE_SIZE * PAGE_TABLE_SIZE)
 #define BACKING_STORE_FILE "BACKING_STORE.bin"
 
+int pageFaults = 0;
+int tlbHits = 0;
+int tlbPointer = 0; //for updateTLB function
+
 // TLB data structure
 typedef struct {
     int pageNumber; // Page number
@@ -36,11 +40,8 @@ PageTableEntry pageTable[PAGE_TABLE_SIZE];
 // Physical memory (Array of PhysicalMemoryPage)
 PhysicalMemoryPage physicalMemory[PHYSICAL_MEMORY_SIZE];
 
-
-int tlbPointer = 0; //for updateTLB function
-
 // Function to initialize the TLB.
-void initializeTLB() 
+void initializeTLB()
 {
     for (int i = 0; i < TLB_SIZE; i++)
     {
@@ -51,7 +52,7 @@ void initializeTLB()
 // Function to check if a TLB entry exists for a page number.
 bool isTLBHit(int pageNumber)
 {
-    for (int i = 0; i < TLB_SIZE; i++) 
+    for (int i = 0; i < TLB_SIZE; i++)
     {
             if (TLB[i].valid && TLB[i].pageNumber == pageNumber)
             {
@@ -62,9 +63,9 @@ bool isTLBHit(int pageNumber)
 }
 
 // Function to get a frame number from the TLB for a page number.
-int getFrameFromTLB(int pageNumber) 
+int getFrameFromTLB(int pageNumber)
 {
-    for (int i = 0; i < TLB_SIZE; i++) 
+    for (int i = 0; i < TLB_SIZE; i++)
     {
             if (TLB[i].valid && TLB[i].pageNumber == pageNumber)
             {
@@ -89,12 +90,11 @@ void updateTLB(int pageNumber, int frameNumber)
 // Function to translate logical addresses to physical addresses and retrieve values.
 void translateAddresses(int* logicalAddresses, int addressCount)
 {
-    // Open the BACKING_STORE.bin file.
+    //open files
+    FILE* fp1 = fopen("out1.txt", "wt");
+    FILE* fp2 = fopen("out2.txt", "wt");
+    FILE* fp3 = fopen("out3.txt", "wt");
     FILE* backingStore = fopen(BACKING_STORE_FILE, "rb");
-    if (backingStore == NULL) {
-        perror("Error opening BACKING_STORE.bin");
-        return;
-    }
 
     for (int i = 0; i < addressCount; i++) {
         int logicalAddress = logicalAddresses[i];
@@ -102,23 +102,31 @@ void translateAddresses(int* logicalAddresses, int addressCount)
         int offset = logicalAddress & 0xFF;
         int frameNumber = -1;
 
-        if (isTLBHit(pageNumber)) {
+        if (isTLBHit(pageNumber))
+        {
             // TLB hit: Get the frame number from the TLB.
             frameNumber = getFrameFromTLB(pageNumber);
-        } else {
+            tlbHits++;
+        }
+        else
+        {
             // TLB miss: You'll need to consult the page table and handle page faults.
             // Implement the logic for page table lookup and page faults here.
             
             // Check if the page is in physical memory. If not, handle page fault.
-            if (pageTable[pageNumber].valid) {
+            if (pageTable[pageNumber].valid)
+            {
                 frameNumber = pageTable[pageNumber].frame;
-            } else {
+            }
+            else
+            {
                 // Page fault: Read the page from BACKING_STORE.bin into physical memory.
                 frameNumber = PAGE_TABLE_SIZE; // The page table size serves as the next available frame.
                 fseek(backingStore, pageNumber * PAGE_SIZE, SEEK_SET);
                 fread(physicalMemory[frameNumber].data, sizeof(char), PAGE_SIZE, backingStore);
                 pageTable[pageNumber].valid = true;
                 pageTable[pageNumber].frame = frameNumber;
+                pageFaults++;
             }
 
             // Update the TLB with the new entry (updateTLB) if a page fault didn't occur.
@@ -129,15 +137,21 @@ void translateAddresses(int* logicalAddresses, int addressCount)
         int physicalAddress = frameNumber * PAGE_SIZE + offset;
         signed char value = physicalMemory[frameNumber].data[offset];
 
-        // Print the results (logical address, physical address, and retrieved value).
-        printf("Logical Address: %d, Physical Address: %d, Value: %d\n", logicalAddress, physicalAddress, value);
+        // save to files
+        fprintf(fp1, "%d\n", logicalAddress);
+        fprintf(fp2, "%d\n", physicalAddress);
+        fprintf(fp3, "%d\n", value);
+        
     }
 
-    // Close BACKING_STORE.bin.
+    // close files
+    fclose(fp1);
+    fclose(fp2);
+    fclose(fp3);
     fclose(backingStore);
 }
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
     char* filename = argv[1];
     int* logicalAddresses = NULL;
@@ -146,20 +160,9 @@ int main(int argc, char* argv[])
 
     //Open file
     FILE *file = fopen(filename, "r");
-    if (file == NULL)
-    {
-        perror("Error opening the file");
-        return 1;
-    }
     
     //Allocate array
     logicalAddresses = (int *)malloc(capacity * sizeof(int));
-
-    if (logicalAddresses == NULL) 
-    {
-            perror("Memory allocation error");
-            return 1;
-    }
     
     //Read file
     int num;
@@ -188,10 +191,15 @@ int main(int argc, char* argv[])
 
         // Translate logical addresses and retrieve values.
         translateAddresses(logicalAddresses, addressCount);
+    
+    // Print statistics
+        printf("Page Faults: %d / %d\n", pageFaults, addressCount);
+        printf("TLB Hits: %d / %d\n", tlbHits, addressCount);
 
         // Clean up resources.
         free(logicalAddresses);
     
     return 0;
 }
+
 
