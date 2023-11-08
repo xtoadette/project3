@@ -180,10 +180,10 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
         // Save to files
         fprintf(fp1, "%d\n", logicalAddress);
         fprintf(fp2, "%d\n", physicalAddress);
-        printf("\tI got here for i = %d\t%d\n", i, value);
+        // printf("\tI got here for i = %d\t%d\n", i, value);
 
         fprintf(fp3, "%d\n", value);
-        printf("I got here for i = %d\t%d\n", i, value);
+        // printf("I got here for i = %d\t%d\n", i, value);
 
     }
 
@@ -219,6 +219,8 @@ int main(int argc, char* argv[]) {
             }
         }
         logicalAddresses[addressCount] = num;
+
+        printf("%d\n", num);
         addressCount++;
     }
 
