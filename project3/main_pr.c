@@ -56,6 +56,9 @@ void initializeFIFOQueue() {
 // Function to update the FIFO queue.
 void updateFIFOQueue(int* pageQueue, int* queuePointer, int pageNumber) {
     pageQueue[*queuePointer] = pageNumber;
+
+    // this is the portion that is giving us the SEG FAULT because
+    // we are updating the queuePointer in multiple places
     // (*queuePointer)++;
 }
 
