@@ -76,9 +76,9 @@ void initializeTLB() {
     for (int i = 0; i < TLB_SIZE; i++) {
         TLB[i].valid = false;
     }
-    for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
-        fifoQueue[i] = i;
-    }
+    // for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
+    //     fifoQueue[i] = i;
+    // }
 }
 
 // Function to check if a TLB entry exists for a page number.
