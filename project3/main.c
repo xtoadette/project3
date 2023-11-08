@@ -98,7 +98,10 @@ void translateAddresses(int* logicalAddresses, int addressCount)
 
     for (int i = 0; i < addressCount; i++) {
         int logicalAddress = logicalAddresses[i];
+
+        // shifting the address by 8 to the right and masking the rightmost 8 bits
         int pageNumber = (logicalAddress >> 8) & 0xFF;
+        // masking the rightmost 8 bits
         int offset = logicalAddress & 0xFF;
         int frameNumber = -1;
 
@@ -130,6 +133,7 @@ void translateAddresses(int* logicalAddresses, int addressCount)
             }
 
             // Update the TLB with the new entry (updateTLB) if a page fault didn't occur.
+            // THIS WILL BE REACHED REGARDLESS OF A PAGE FAULT
             updateTLB(pageNumber, frameNumber);
         }
 
@@ -187,17 +191,17 @@ int main(int argc, char* argv[])
     
     initializeTLB();
 
-        // Initialize Page Table (if required).
+    // Initialize Page Table (if required).
 
-        // Translate logical addresses and retrieve values.
-        translateAddresses(logicalAddresses, addressCount);
+    // Translate logical addresses and retrieve values.
+    translateAddresses(logicalAddresses, addressCount);
     
     // Print statistics
-        printf("Page Faults: %d / %d\n", pageFaults, addressCount);
-        printf("TLB Hits: %d / %d\n", tlbHits, addressCount);
+    printf("Page Faults: %d / %d\n", pageFaults, addressCount);
+    printf("TLB Hits: %d / %d\n", tlbHits, addressCount);
 
-        // Clean up resources.
-        free(logicalAddresses);
+    // Clean up resources.
+    free(logicalAddresses);
     
     return 0;
 }
