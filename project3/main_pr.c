@@ -56,7 +56,7 @@ void initializeFIFOQueue() {
 // Function to update the FIFO queue.
 void updateFIFOQueue(int* pageQueue, int* queuePointer, int pageNumber) {
     pageQueue[*queuePointer] = pageNumber;
-    (*queuePointer)++;
+    // (*queuePointer)++;
 }
 
 
@@ -76,6 +76,8 @@ void initializeTLB() {
     for (int i = 0; i < TLB_SIZE; i++) {
         TLB[i].valid = false;
     }
+
+    // this is the second place that is initializing the fifo queue!! NO GOOD
     // for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
     //     fifoQueue[i] = i;
     // }
@@ -128,10 +130,19 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
     int pageQueue[PAGE_TABLE_SIZE]; // FIFO queue to track loaded pages
     int queuePointer = 0; // Pointer to the front of the queue
 
+
+
+
+
+
+
+
     for (int i = 0; i < addressCount; i++) {
         int logicalAddress = logicalAddresses[i];
         int pageNumber = (logicalAddress >> 8) & 0xFF;
         int offset = logicalAddress & 0xFF;
+
+        printf("pageNumber %d\toffset %d\n", pageNumber, offset);
         int frameNumber = -1;
 
         if (isTLBHit(pageNumber)) {
@@ -162,6 +173,7 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
                 pageQueue[queuePointer - 1] = pageNumber; // Add the new page to the queue
                 fseek(backingStore, pageNumber * PAGE_SIZE, SEEK_SET);
                 fread(physicalMemory[frameNumber].data, sizeof(char), PAGE_SIZE, backingStore);
+                // printf("\tdata %s\n", physicalMemory[frameNumber].data);
                 pageTable[pageNumber].valid = true;
                 pageTable[pageNumber].frame = frameNumber;
                 pageFaults++;
@@ -169,6 +181,8 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
 
             // Update the TLB with the new entry (updateTLB) if a page fault didn't occur.
             updateTLB(pageNumber, frameNumber);
+            // printf("tblPointer %d\n", tlbPointer);
+
             updateFIFOQueue(pageQueue, &queuePointer, pageNumber);
 
         }
@@ -186,6 +200,18 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
         // printf("I got here for i = %d\t%d\n", i, value);
 
     }
+
+
+
+
+
+
+
+
+
+
+
+
 
     // Close files
     fclose(fp1);
@@ -219,8 +245,6 @@ int main(int argc, char* argv[]) {
             }
         }
         logicalAddresses[addressCount] = num;
-
-        printf("%d\n", num);
         addressCount++;
     }
 
