@@ -122,6 +122,7 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
         loadedPages[i] = false;
     }
 
+
     int pageQueue[PAGE_TABLE_SIZE]; // FIFO queue to track loaded pages
     int queuePointer = 0; // Pointer to the front of the queue
 
@@ -132,41 +133,43 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
         int frameNumber = -1;
 
         if (isTLBHit(pageNumber)) {
-                // TLB hit: Get the frame number from the TLB.
-                frameNumber = getFrameFromTLB(pageNumber);
-                tlbHits++;
-            } else {
-                // TLB miss: You'll need to consult the page table and handle page faults.
-                // Implement the logic for page table lookup and page faults here.
+            // TLB hit: Get the frame number from the TLB.
+            frameNumber = getFrameFromTLB(pageNumber);
+            tlbHits++;
+        } 
+        else {
+            // TLB miss: You'll need to consult the page table and handle page faults.
+            // Implement the logic for page table lookup and page faults here.
 
-                // Check if the page is in physical memory. If not, handle page fault.
-                if (pageTable[pageNumber].valid) {
-                    frameNumber = pageTable[pageNumber].frame;
+            // Check if the page is in physical memory. If not, handle page fault.
+            if (pageTable[pageNumber].valid) {
+                frameNumber = pageTable[pageNumber].frame;
+            } 
+            else {
+                // Page fault: Find an available frame for the new page
+                frameNumber = -1;
+                if (queuePointer < PAGE_TABLE_SIZE) {
+                    frameNumber = queuePointer;
+                    queuePointer++;
                 } else {
-                    // Page fault: Find an available frame for the new page
-                    frameNumber = -1;
-                    if (queuePointer < PAGE_TABLE_SIZE) {
-                        frameNumber = queuePointer;
-                        queuePointer++;
-                    } else {
-                        // Apply FIFO page replacement to find the oldest page to replace
-                        int oldestPage = findOldestPage(pageQueue, queuePointer);
-                        frameNumber = pageTable[oldestPage].frame;
-                    }
-
-                    pageQueue[queuePointer - 1] = pageNumber; // Add the new page to the queue
-                    fseek(backingStore, pageNumber * PAGE_SIZE, SEEK_SET);
-                    fread(physicalMemory[frameNumber].data, sizeof(char), PAGE_SIZE, backingStore);
-                    pageTable[pageNumber].valid = true;
-                    pageTable[pageNumber].frame = frameNumber;
-                    pageFaults++;
+                    // Apply FIFO page replacement to find the oldest page to replace
+                    int oldestPage = findOldestPage(pageQueue, queuePointer);
+                    frameNumber = pageTable[oldestPage].frame;
                 }
 
-                // Update the TLB with the new entry (updateTLB) if a page fault didn't occur.
-                updateTLB(pageNumber, frameNumber);
-                updateFIFOQueue(pageQueue, &queuePointer, pageNumber);
-
+                pageQueue[queuePointer - 1] = pageNumber; // Add the new page to the queue
+                fseek(backingStore, pageNumber * PAGE_SIZE, SEEK_SET);
+                fread(physicalMemory[frameNumber].data, sizeof(char), PAGE_SIZE, backingStore);
+                pageTable[pageNumber].valid = true;
+                pageTable[pageNumber].frame = frameNumber;
+                pageFaults++;
             }
+
+            // Update the TLB with the new entry (updateTLB) if a page fault didn't occur.
+            updateTLB(pageNumber, frameNumber);
+            updateFIFOQueue(pageQueue, &queuePointer, pageNumber);
+
+        }
 
         // Use the frame number and offset to access physical memory and retrieve the value.
         int physicalAddress = frameNumber * PAGE_SIZE + offset;
@@ -175,7 +178,11 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
         // Save to files
         fprintf(fp1, "%d\n", logicalAddress);
         fprintf(fp2, "%d\n", physicalAddress);
+
+
         fprintf(fp3, "%d\n", value);
+
+
     }
 
     // Close files
@@ -212,6 +219,9 @@ int main(int argc, char* argv[]) {
         logicalAddresses[addressCount] = num;
         addressCount++;
     }
+
+
+
     // Close file
     fclose(file);
 
