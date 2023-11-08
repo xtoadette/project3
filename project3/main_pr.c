@@ -32,6 +32,16 @@ typedef struct {
     char data[PAGE_SIZE]; // Data stored in a page (256 bytes)
 } PhysicalMemoryPage;
 
+// TLB (Array of TLBEntry)
+TLBEntry TLB[TLB_SIZE];
+
+// Page table (Array of PageTableEntry)
+PageTableEntry pageTable[PAGE_TABLE_SIZE];
+
+// Physical memory (Array of PhysicalMemoryPage)
+PhysicalMemoryPage physicalMemory[PHYSICAL_MEMORY_SIZE];
+
+
 // FIFO Queue for page replacement
 // FIFO Queue for page replacement
 int fifoQueue[PHYSICAL_MEMORY_SIZE / PAGE_SIZE]; // Updated to match the physical memory size
@@ -60,14 +70,6 @@ int findOldestPage(int* pageQueue, int queuePointer) {
 }
 
 
-// TLB (Array of TLBEntry)
-TLBEntry TLB[TLB_SIZE];
-
-// Page table (Array of PageTableEntry)
-PageTableEntry pageTable[PAGE_TABLE_SIZE];
-
-// Physical memory (Array of PhysicalMemoryPage)
-PhysicalMemoryPage physicalMemory[PHYSICAL_MEMORY_SIZE];
 
 // Function to initialize the TLB and FIFO queue.
 void initializeTLB() {
@@ -178,10 +180,10 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
         // Save to files
         fprintf(fp1, "%d\n", logicalAddress);
         fprintf(fp2, "%d\n", physicalAddress);
-
+        printf("\tI got here for i = %d\t%d\n", i, value);
 
         fprintf(fp3, "%d\n", value);
-
+        printf("I got here for i = %d\t%d\n", i, value);
 
     }
 
