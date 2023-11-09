@@ -145,7 +145,7 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
         int pageNumber = (logicalAddress >> 8) & 0xFF;
         int offset = logicalAddress & 0xFF;
 
-        printf("pageNumber %d\toffset %d\n", pageNumber, offset);
+        // printf("pageNumber %d\toffset %d\n", pageNumber, offset);
         int frameNumber = -1;
 
         if (isTLBHit(pageNumber)) {
@@ -164,11 +164,12 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
             else {
                 // Page fault: Find an available frame for the new page
                 frameNumber = -1;
-                if (queuePointer < PAGE_TABLE_SIZE) {
+                if (queuePointer < (PAGE_TABLE_SIZE / 2) ) {
                     frameNumber = queuePointer;
                     queuePointer++;
                 } else {
                     // Apply FIFO page replacement to find the oldest page to replace
+                    printf("The FIFO getting called at i = %d\n", i);
                     int oldestPage = findOldestPage(pageQueue, queuePointer);
                     frameNumber = pageTable[oldestPage].frame;
                 }
