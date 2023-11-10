@@ -110,6 +110,8 @@ int getFrameFromTLB(int pageNumber) {
 
 // Function to update the TLB.
 void updateTLB(int pageNumber, int frameNumber) {
+    // printf("\tUpdating TBL w/ pageNumber %d tblPointer %d\n", pageNumber, tlbPointer);
+
     TLB[tlbPointer].pageNumber = pageNumber;
     TLB[tlbPointer].frameNumber = frameNumber;
     TLB[tlbPointer].valid = true;
@@ -139,20 +141,25 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
 
 
     int pageQueue[PAGE_TABLE_SIZE]; // FIFO queue to track loaded pages
-    int queuePointer = 0;           // Pointer to the front of the queue
-    int physicalAddress;
+    int queuePointer = 0;           // Pointer to the front of the queue, tied to pageNumber
+    int physicalAddress;            // not being used
+    int max_address = 0;
 
 
-
+    int logicalAddress;
+    int pageNumber;     // always less than 256
+    int offset;
 
 
 
 
 
     for (int i = 0; i < addressCount; i++) {
-        int logicalAddress = logicalAddresses[i];
-        int pageNumber = (logicalAddress >> 8) & 0xFF;
-        int offset = logicalAddress & 0xFF;
+
+        logicalAddress = logicalAddresses[i];
+        pageNumber = (logicalAddress >> 8) & 0xFF;
+        offset = logicalAddress & 0xFF;
+
 
         // printf("pageNumber %d\toffset %d\n", pageNumber, offset);
         int frameNumber = -1;
@@ -169,6 +176,7 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
             // Check if the page is in physical memory. If not, handle page fault.
             if (pageTable[pageNumber].valid) {
                 frameNumber = pageTable[pageNumber].frame;
+                // printf("I was here! for pageNumber %d\n", pageNumber);
             } 
             else {
                 // Page fault: Find an available frame for the new page
@@ -197,6 +205,7 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
             }
 
             // Update the TLB with the new entry (updateTLB) if a page fault didn't occur.
+            // printf("Updating TBL w/ pageNumber %d\n", pageNumber);
             updateTLB(pageNumber, frameNumber);
             // printf("tblPointer %d\n", tlbPointer);
 
@@ -206,14 +215,16 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
 
         // Use the frame number and offset to access physical memory and retrieve the value.
         physicalAddress = frameNumber * PAGE_SIZE + offset;
-        printf("physicalAddress %d\n", physicalAddress);
+        // printf("physicalAddress %d\n", physicalAddress);
 
 
         signed char value = physicalMemory[frameNumber].data[offset];
         physicalMemory[frameNumber].used = 1;
 
-        printf("\tmemory access @ physicalAddress %d\n", physicalAddress);
+        // printf("\tmemory access @ physicalAddress %d\n", physicalAddress);
 
+        if (pageNumber > max_address)
+            max_address = pageNumber;
 
         // Save to files
         fprintf(fp1, "%d\n", logicalAddress);
@@ -247,6 +258,8 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
     fclose(fp3);
     fclose(fp4);
     fclose(backingStore);
+
+    printf("\n******* The greatest pageNumber was %d\n", max_address);
 }
 
 int main(int argc, char* argv[]) {
