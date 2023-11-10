@@ -30,6 +30,7 @@ typedef struct {
 // Physical memory data structure
 typedef struct {
     char data[PAGE_SIZE]; // Data stored in a page (256 bytes)
+    int used;
 } PhysicalMemoryPage;
 
 // TLB (Array of TLBEntry)
@@ -44,11 +45,11 @@ PhysicalMemoryPage physicalMemory[PHYSICAL_MEMORY_SIZE];
 
 // FIFO Queue for page replacement
 // FIFO Queue for page replacement
-int fifoQueue[PHYSICAL_MEMORY_SIZE / PAGE_SIZE]; // Updated to match the physical memory size
+int fifoQueue[256]; // Updated to match the physical memory size
 
 // Initialize the FIFO queue
 void initializeFIFOQueue() {
-    for (int i = 0; i < PHYSICAL_MEMORY_SIZE / PAGE_SIZE; i++) {
+    for (int i = 0; i < 256; i++) {
         fifoQueue[i] = -1; // Initialize with -1 to indicate empty slots
     }
 }
@@ -78,6 +79,7 @@ int findOldestPage(int* pageQueue, int queuePointer) {
 void initializeTLB() {
     for (int i = 0; i < TLB_SIZE; i++) {
         TLB[i].valid = false;
+        TLB[i].frameNumber = 0;
     }
 
     // this is the second place that is initializing the fifo queue!! NO GOOD
@@ -99,7 +101,7 @@ bool isTLBHit(int pageNumber) {
 // Function to get a frame number from the TLB for a page number.
 int getFrameFromTLB(int pageNumber) {
     for (int i = 0; i < TLB_SIZE; i++) {
-        if (TLB[i].valid && TLB[i].pageNumber == pageNumber) {
+        if ( TLB[i].pageNumber == pageNumber ) {
             return TLB[i].frameNumber;
         }
     }
@@ -124,14 +126,21 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
     FILE* backingStore = fopen(BACKING_STORE_FILE, "rb");
 
     // Initialize an array to keep track of the loaded pages in physical memory
-    bool loadedPages[PAGE_TABLE_SIZE];
-    for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
-        loadedPages[i] = false;
-    }
+
+    //   ****************************************************************
+    // this array variable is not being used right here and the code works withought it
+
+    // bool loadedPages[PAGE_TABLE_SIZE];
+    // for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
+    //     loadedPages[i] = false;
+    // }
+    //   ****************************************************************
+
 
 
     int pageQueue[PAGE_TABLE_SIZE]; // FIFO queue to track loaded pages
-    int queuePointer = 0; // Pointer to the front of the queue
+    int queuePointer = 0;           // Pointer to the front of the queue
+    int physicalAddress;
 
 
 
@@ -164,7 +173,11 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
             else {
                 // Page fault: Find an available frame for the new page
                 frameNumber = -1;
-                if (queuePointer < (PAGE_TABLE_SIZE / 2) ) {
+                //   ****************************************************************
+                if (queuePointer < (256) ) {
+                //   ****************************************************************
+
+
                     frameNumber = queuePointer;
                     queuePointer++;
                 } else {
@@ -192,8 +205,15 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
         }
 
         // Use the frame number and offset to access physical memory and retrieve the value.
-        int physicalAddress = frameNumber * PAGE_SIZE + offset;
+        physicalAddress = frameNumber * PAGE_SIZE + offset;
+        printf("physicalAddress %d\n", physicalAddress);
+
+
         signed char value = physicalMemory[frameNumber].data[offset];
+        physicalMemory[frameNumber].used = 1;
+
+        printf("\tmemory access @ physicalAddress %d\n", physicalAddress);
+
 
         // Save to files
         fprintf(fp1, "%d\n", logicalAddress);
@@ -208,8 +228,12 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
 
 
 
+    FILE* fp4 = fopen("random_file.txt", "wt");
 
+    for (int i = 0; i < PHYSICAL_MEMORY_SIZE; i++){
+        fprintf(fp4, "%d\n", physicalMemory[i].used );
 
+    }
 
 
 
@@ -221,6 +245,7 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
     fclose(fp1);
     fclose(fp2);
     fclose(fp3);
+    fclose(fp4);
     fclose(backingStore);
 }
 
