@@ -186,9 +186,9 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
 
                 // Page fault: Find an available frame for the new page
                 frameNumber = -1;
-                //   ****************************************************************
+                // *********************************************************************
                 if (queuePointer < ( FRAME_SIZE ) ) {
-                //   ****************************************************************
+                // *********************************************************************
 
                     // printf("In here\n");
                     frameNumber = queuePointer;
