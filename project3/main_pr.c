@@ -12,7 +12,7 @@
 int pageFaults = 0;
 int tlbHits = 0;
 int tlbPointer = 0; // for updateTLB function
-int fifoPointer = 0; // for FIFO page replacement
+int queuePointer = 0;           // Pointer to the front of the queue, tied to pageNumber
 
 // TLB data structure
 typedef struct {
@@ -37,61 +37,40 @@ typedef struct {
 TLBEntry TLB[TLB_SIZE];
 
 // Page table (Array of PageTableEntry)
-PageTableEntry pageTable[PAGE_TABLE_SIZE];
+PageTableEntry pageTable[PHYSICAL_MEMORY_SIZE];
 
 // Physical memory (Array of PhysicalMemoryPage)
 PhysicalMemoryPage physicalMemory[PHYSICAL_MEMORY_SIZE];
 
-
-// FIFO Queue for page replacement
-// FIFO Queue for page replacement
-int fifoQueue[256]; // Updated to match the physical memory size
-
-// Initialize the FIFO queue
-void initializeFIFOQueue() {
-    for (int i = 0; i < 256; i++) {
-        fifoQueue[i] = -1; // Initialize with -1 to indicate empty slots
-    }
-}
-
-// Function to update the FIFO queue.
-void updateFIFOQueue(int* pageQueue, int* queuePointer, int pageNumber) {
-    pageQueue[*queuePointer] = pageNumber;
-
-    // this is the portion that is giving us the SEG FAULT because
-    // we are updating the queuePointer in multiple places
-    // (*queuePointer)++;
-}
-
-
-int findOldestPage(int* pageQueue, int queuePointer) {
+int findOldestPage(int* pageQueue, int queuePointer)
+{
+    printf("Calling findOldestPage\n");
     int oldestPage = pageQueue[0];
     // Shift the elements in the queue to remove the oldest page.
-    for (int i = 1; i < queuePointer; i++) {
+    for (int i = 1; i < queuePointer; i++)
+    {
         pageQueue[i - 1] = pageQueue[i];
     }
+
     return oldestPage;
 }
 
-
-
-// Function to initialize the TLB and FIFO queue.
+// Function to initialize the TLB
 void initializeTLB() {
-    for (int i = 0; i < TLB_SIZE; i++) {
+    for (int i = 0; i < TLB_SIZE; i++)
+    {
         TLB[i].valid = false;
         TLB[i].frameNumber = 0;
     }
-
-    // this is the second place that is initializing the fifo queue!! NO GOOD
-    // for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
-    //     fifoQueue[i] = i;
-    // }
 }
 
 // Function to check if a TLB entry exists for a page number.
-bool isTLBHit(int pageNumber) {
-    for (int i = 0; i < TLB_SIZE; i++) {
-        if (TLB[i].valid && TLB[i].pageNumber == pageNumber) {
+bool isTLBHit(int pageNumber)
+{
+    for (int i = 0; i < TLB_SIZE; i++)
+    {
+        if (TLB[i].valid && TLB[i].pageNumber == pageNumber)
+        {
             return true;
         }
     }
@@ -99,9 +78,12 @@ bool isTLBHit(int pageNumber) {
 }
 
 // Function to get a frame number from the TLB for a page number.
-int getFrameFromTLB(int pageNumber) {
-    for (int i = 0; i < TLB_SIZE; i++) {
-        if ( TLB[i].pageNumber == pageNumber ) {
+int getFrameFromTLB(int pageNumber)
+{
+    for (int i = 0; i < TLB_SIZE; i++)
+    {
+        if ( TLB[i].pageNumber == pageNumber )
+        {
             return TLB[i].frameNumber;
         }
     }
@@ -109,7 +91,8 @@ int getFrameFromTLB(int pageNumber) {
 }
 
 // Function to update the TLB.
-void updateTLB(int pageNumber, int frameNumber) {
+void updateTLB(int pageNumber, int frameNumber)
+{
     // printf("\tUpdating TBL w/ pageNumber %d tblPointer %d\n", pageNumber, tlbPointer);
 
     TLB[tlbPointer].pageNumber = pageNumber;
@@ -120,28 +103,15 @@ void updateTLB(int pageNumber, int frameNumber) {
     tlbPointer = (tlbPointer + 1) % TLB_SIZE;
 }
 
-void translateAddresses(int* logicalAddresses, int addressCount) {
+void translateAddresses(int* logicalAddresses, int addressCount)
+{
     // Open files
     FILE* fp1 = fopen("out1.txt", "wt");
     FILE* fp2 = fopen("out2.txt", "wt");
     FILE* fp3 = fopen("out3.txt", "wt");
     FILE* backingStore = fopen(BACKING_STORE_FILE, "rb");
 
-    // Initialize an array to keep track of the loaded pages in physical memory
-
-    //   ****************************************************************
-    // this array variable is not being used right here and the code works withought it
-
-    // bool loadedPages[PAGE_TABLE_SIZE];
-    // for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
-    //     loadedPages[i] = false;
-    // }
-    //   ****************************************************************
-
-
-
     int pageQueue[PAGE_TABLE_SIZE]; // FIFO queue to track loaded pages
-    int queuePointer = 0;           // Pointer to the front of the queue, tied to pageNumber
     int physicalAddress;            // not being used
     int max_address = 0;
 
@@ -151,44 +121,50 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
     int offset;
 
 
-
-
-
     for (int i = 0; i < addressCount; i++) {
 
         logicalAddress = logicalAddresses[i];
-        pageNumber = (logicalAddress >> 8) & 0xFF;
-        offset = logicalAddress & 0xFF;
+        pageNumber = logicalAddress / PAGE_SIZE;
+        offset = logicalAddress % PAGE_SIZE;
 
 
         // printf("pageNumber %d\toffset %d\n", pageNumber, offset);
         int frameNumber = -1;
 
-        if (isTLBHit(pageNumber)) {
+        if (isTLBHit(pageNumber))
+        {
             // TLB hit: Get the frame number from the TLB.
             frameNumber = getFrameFromTLB(pageNumber);
             tlbHits++;
-        } 
-        else {
+        }
+        else
+        {
             // TLB miss: You'll need to consult the page table and handle page faults.
             // Implement the logic for page table lookup and page faults here.
 
             // Check if the page is in physical memory. If not, handle page fault.
-            if (pageTable[pageNumber].valid) {
+            if (pageTable[pageNumber].valid)
+            {
                 frameNumber = pageTable[pageNumber].frame;
-                // printf("I was here! for pageNumber %d\n", pageNumber);
-            } 
-            else {
+                //printf("I was here! for pageNumber %d in the if block\n", pageNumber);
+            }
+            else
+            {
                 // Page fault: Find an available frame for the new page
+               // printf("I was here! for pageNumber %d in the else block\n", pageNumber);
                 frameNumber = -1;
                 //   ****************************************************************
-                if (queuePointer < (256) ) {
+                if (queuePointer < (PAGE_TABLE_SIZE))
+                {
                 //   ****************************************************************
-
 
                     frameNumber = queuePointer;
                     queuePointer++;
-                } else {
+                    printf("Queue pointer: %d\n", queuePointer);
+                }
+                else
+                {
+                    queuePointer = 0;
                     // Apply FIFO page replacement to find the oldest page to replace
                     printf("The FIFO getting called at i = %d\n", i);
                     int oldestPage = findOldestPage(pageQueue, queuePointer);
@@ -203,14 +179,12 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
                 pageTable[pageNumber].frame = frameNumber;
                 pageFaults++;
             }
-
             // Update the TLB with the new entry (updateTLB) if a page fault didn't occur.
-            // printf("Updating TBL w/ pageNumber %d\n", pageNumber);
+             printf("Updating TBL w/ pageNumber %d\n", pageNumber);
             updateTLB(pageNumber, frameNumber);
             // printf("tblPointer %d\n", tlbPointer);
-
-            updateFIFOQueue(pageQueue, &queuePointer, pageNumber);
-
+            
+            pageQueue[queuePointer] = pageNumber; //updatePageQueue
         }
 
         // Use the frame number and offset to access physical memory and retrieve the value.
@@ -241,7 +215,8 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
 
     FILE* fp4 = fopen("random_file.txt", "wt");
 
-    for (int i = 0; i < PHYSICAL_MEMORY_SIZE; i++){
+    for (int i = 0; i < PHYSICAL_MEMORY_SIZE; i++)
+    {
         fprintf(fp4, "%d\n", physicalMemory[i].used );
 
     }
@@ -259,10 +234,11 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
     fclose(fp4);
     fclose(backingStore);
 
-    printf("\n******* The greatest pageNumber was %d\n", max_address);
+    //printf("\n******* The greatest pageNumber was %d\n", max_address);
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
     char* filename = argv[1];
     int* logicalAddresses = NULL;
     int addressCount = 0;
@@ -276,12 +252,15 @@ int main(int argc, char* argv[]) {
 
     // Read file
     int num;
-    while (fscanf(file, "%d", &num) == 1) {
+    while (fscanf(file, "%d", &num) == 1)
+    {
         // Reallocate if full
-        if (addressCount == capacity) {
+        if (addressCount == capacity)
+        {
             capacity *= 2;
             logicalAddresses = (int*)realloc(logicalAddresses, capacity * sizeof(int));
-            if (logicalAddresses == NULL) {
+            if (logicalAddresses == NULL)
+            {
                 perror("Memory reallocation error");
                 return 1;
             }
@@ -291,14 +270,10 @@ int main(int argc, char* argv[]) {
     }
 
 
-
     // Close file
     fclose(file);
 
     initializeTLB();
-
-    // Initialize Page Table (if required).
-    initializeFIFOQueue();
 
     // Translate logical addresses and retrieve values.
     translateAddresses(logicalAddresses, addressCount);
@@ -312,5 +287,7 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+
+
 
 
