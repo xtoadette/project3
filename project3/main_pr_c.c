@@ -82,7 +82,7 @@ void initializeTables() {
 
     // initializing the TLB
     for (int i = 0; i < TLB_SIZE; i++) {
-        TLB[i].valid = false;
+        
         TLB[i].frameNumber = 0;
     }
 
