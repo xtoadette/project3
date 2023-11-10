@@ -24,7 +24,7 @@ typedef struct {
 
 // Page table data structure
 typedef struct {
-    int frame; // Frame number
+    int frameNumber; // Frame number
     bool valid; // Valid bit to check if the entry is valid
 } PageTableEntry;
 
@@ -77,17 +77,20 @@ int findOldestPage(int* pageQueue, int queuePointer) {
 
 
 
-// Function to initialize the TLB and FIFO queue.
-void initializeTLB() {
+// Function to initialize the TLB and pagr table
+void initializeTables() {
+
+    // initializing the TLB
     for (int i = 0; i < TLB_SIZE; i++) {
         TLB[i].valid = false;
         TLB[i].frameNumber = 0;
     }
 
-    // this is the second place that is initializing the fifo queue!! NO GOOD
-    // for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
-    //     fifoQueue[i] = i;
-    // }
+    // initializing the page table
+    for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
+        pageTable[i].valid = false;
+        pageTable[i].frameNumber = 0;
+    }
 }
 
 // Function to check if a TLB entry exists for a page number.
@@ -178,7 +181,7 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
 
             // Check if the page is in physical memory. If not, handle page fault.
             if (pageTable[pageNumber].valid) {
-                frameNumber = pageTable[pageNumber].frame;
+                frameNumber = pageTable[pageNumber].frameNumber;
                 // printf("I was here! for pageNumber %d\n", pageNumber);
             } 
             else {
@@ -186,9 +189,8 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
 
                 // Page fault: Find an available frame for the new page
                 frameNumber = -1;
-                // *********************************************************************
+
                 if (queuePointer < ( FRAME_SIZE ) ) {
-                // *********************************************************************
 
                     // printf("In here\n");
                     frameNumber = queuePointer;
@@ -197,7 +199,7 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
                     // Apply FIFO page replacement to find the oldest page to replace
                     // printf("The FIFO getting called at i = %d\n", i);
                     int oldestPage = findOldestPage(pageQueue, queuePointer);
-                    frameNumber = pageTable[oldestPage].frame;
+                    frameNumber = pageTable[oldestPage].frameNumber;
                 }
 
 
@@ -218,7 +220,7 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
                 // printf("\tI got here two\n");
 
                 pageTable[pageNumber].valid = true;
-                pageTable[pageNumber].frame = frameNumber;
+                pageTable[pageNumber].frameNumber = frameNumber;
                 pageFaults++;
 
             }
@@ -324,7 +326,7 @@ int main(int argc, char* argv[]) {
     // Close file
     fclose(file);
 
-    initializeTLB();
+    initializeTables();
 
     // Initialize Page Table (if required).
     initializeFIFOQueue();
