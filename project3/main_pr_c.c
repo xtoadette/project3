@@ -61,14 +61,14 @@ PhysicalMemoryPage physicalMemory[ NUM_FRAMES ];        // physical memory is
 
 // FIFO Queue for page replacement
 // FIFO Queue for page replacement
-int fifoQueue[256]; // Updated to match the physical memory size
+// int fifoQueue[256]; // Updated to match the physical memory size
 
 // Initialize the FIFO queue
-void initializeFIFOQueue() {
-    for (int i = 0; i < 256; i++) {
-        fifoQueue[i] = -1; // Initialize with -1 to indicate empty slots
-    }
-}
+// void initializeFIFOQueue() {
+//     for (int i = 0; i < 256; i++) {
+//         fifoQueue[i] = -1; // Initialize with -1 to indicate empty slots
+//     }
+// }
 
 void init_q(queue *q) {
     q -> head = NULL;
@@ -184,7 +184,7 @@ void updateTLB(int pageNumber, int frameNumber) {
     tlbPointer = (tlbPointer + 1) % TLB_SIZE;
 }
 
-void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueue, queue *tblQueue) {
+void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueue) {
     // Open files
     FILE* fp1 = fopen("out1.txt", "wt");
     FILE* fp2 = fopen("out2.txt", "wt");
@@ -315,8 +315,8 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
 
             // updateFIFOQueue(pageQueue, &queuePointer, pageNumber);
 
+            updateTLB(pageNumber, frameNumber);
         }
-        updateTLB(pageNumber, frameNumber);
 
         // Use the frame number and offset to access physical memory and retrieve the value.
         // printf("Trouble heren\n");
@@ -390,7 +390,7 @@ int main(int argc, char* argv[]) {
     // Allocate array
     logicalAddresses = (int*)malloc(capacity * sizeof(int));
     // FRAMES = (int *)malloc(sizeof(int) * NUM_FRAMES);
-    queue fifoOldest, tblOldest;
+    queue fifoOldest;
 
 
 
@@ -418,12 +418,12 @@ int main(int argc, char* argv[]) {
     initializeTables();
 
     // Initialize Page Table (if required).
-    initializeFIFOQueue();
+    // initializeFIFOQueue();
     init_q(&fifoOldest);
-    init_q(&tblOldest);
+
 
     // Translate logical addresses and retrieve values.
-    translateAddresses(logicalAddresses, addressCount, &fifoOldest, &tblOldest);
+    translateAddresses(logicalAddresses, addressCount, &fifoOldest);
 
     // Print statistics
     printf("Page Faults: %d / %d\n", pageFaults, addressCount);
