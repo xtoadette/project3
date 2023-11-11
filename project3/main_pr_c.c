@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define NUM_FRAMES 32                   // change number of required frames here
+#define NUM_FRAMES 128                   // change number of required frames here
 #define PAGE_SIZE 256
 #define PAGE_TABLE_SIZE 256
 #define TLB_SIZE 16
