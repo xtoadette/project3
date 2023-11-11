@@ -184,7 +184,7 @@ void updateTLB(int pageNumber, int frameNumber) {
     tlbPointer = (tlbPointer + 1) % TLB_SIZE;
 }
 
-void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueue) {
+void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueue, queue *tblQueue) {
     // Open files
     FILE* fp1 = fopen("out1.txt", "wt");
     FILE* fp2 = fopen("out2.txt", "wt");
@@ -197,10 +197,10 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
     // this array variable is not being used right here and the code works withought it
     // use this, get the value from physical memory/backing store into here,
 
-    bool loadedPages[PAGE_SIZE];
-    for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
-        loadedPages[i] = false;
-    }
+    // bool loadedPages[PAGE_SIZE];
+    // for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
+    //     loadedPages[i] = false;
+    // }
     //   ****************************************************************
 
 
@@ -263,7 +263,7 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
                     pageTable[pageNumber].frameNumber = frameNumber;
                     pageTable[pageNumber].valid = true;
 
-                    printf("In fifo call i %d\n", k);
+                    // printf("In fifo call i %d\n", k);
                     en_q(fifoQueue, frameNumber);
                 }
 
@@ -309,7 +309,6 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
             // printf("Updating TBL w/ pageNumber %d\n", pageNumber);
             // printf("here w/ frameNumber %d\n", frameNumber);
 
-            updateTLB(pageNumber, frameNumber);
             // printf("tblPointer %d\n", tlbPointer);
             // printf("\tvalue of frameNumber %d\n", frameNumber);
 
@@ -317,6 +316,7 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
             // updateFIFOQueue(pageQueue, &queuePointer, pageNumber);
 
         }
+        updateTLB(pageNumber, frameNumber);
 
         // Use the frame number and offset to access physical memory and retrieve the value.
         // printf("Trouble heren\n");
@@ -390,7 +390,8 @@ int main(int argc, char* argv[]) {
     // Allocate array
     logicalAddresses = (int*)malloc(capacity * sizeof(int));
     // FRAMES = (int *)malloc(sizeof(int) * NUM_FRAMES);
-    queue oldest;
+    queue fifoOldest, tblOldest;
+
 
 
     // Read file
@@ -418,10 +419,11 @@ int main(int argc, char* argv[]) {
 
     // Initialize Page Table (if required).
     initializeFIFOQueue();
-    init_q(&oldest);
+    init_q(&fifoOldest);
+    init_q(&tblOldest);
 
     // Translate logical addresses and retrieve values.
-    translateAddresses(logicalAddresses, addressCount, &oldest);
+    translateAddresses(logicalAddresses, addressCount, &fifoOldest, &tblOldest);
 
     // Print statistics
     printf("Page Faults: %d / %d\n", pageFaults, addressCount);
