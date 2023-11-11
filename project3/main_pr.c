@@ -123,6 +123,20 @@ void translateAddresses(int* logicalAddresses, int addressCount)
     FILE* fp3 = fopen("out3.txt", "wt");
     FILE* backingStore = fopen(BACKING_STORE_FILE, "rb");
 
+    // Initialize an array to keep track of the loaded pages in physical memory
+
+    //   ****************************************************************
+    // this array variable is not being used right here and the code works withought it
+    // use this, get the value from physical memory/backing store into here,
+
+    bool loadedPages[PAGE_SIZE];
+    for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
+        loadedPages[i] = false;
+    }
+    //   ****************************************************************
+
+
+
     int pageQueue[PAGE_TABLE_SIZE]; // FIFO queue to track loaded pages
     int physicalAddress;            // not being used
     int max_address = 0;
@@ -200,7 +214,7 @@ void translateAddresses(int* logicalAddresses, int addressCount)
 
         // Use the frame number and offset to access physical memory and retrieve the value.
         physicalAddress = frameNumber * PAGE_SIZE + offset;
-        // printf("physicalAddress %d\n", physicalAddress);
+        printf("physicalAddress %d\n", physicalAddress);
 
 
         signed char value = physicalMemory[frameNumber].data[offset];
@@ -208,8 +222,8 @@ void translateAddresses(int* logicalAddresses, int addressCount)
 
         // printf("\tmemory access @ physicalAddress %d\n", physicalAddress);
 
-        if (frameNumber > max_address)
-            max_address = frameNumber;
+        if (offset > max_address)
+            max_address = offset;
 
         // Save to files
         fprintf(fp1, "%d\n", logicalAddress);
