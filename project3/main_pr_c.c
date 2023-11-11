@@ -2,12 +2,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define VIRTUAL_ADDRESS_SIZE 65536
-#define NUM_FRAMES 128                   // change number of required frames here
+#define NUM_FRAMES 32                   // change number of required frames here
 #define PAGE_SIZE 256
 #define PAGE_TABLE_SIZE 256
 #define TLB_SIZE 16
-#define PHYSICAL_MEMORY_SIZE (PAGE_SIZE * NUM_FRAMES) // 128 frames
+#define PHYSICAL_MEMORY_SIZE 65536
 #define BACKING_STORE_FILE "BACKING_STORE.bin"
 
 int pageFaults = 0;
@@ -52,7 +51,7 @@ typedef struct{
 TLBEntry TLB[ TLB_SIZE ];
 
 // Page table (Array of PageTableEntry)
-PageTableEntry pageTable[ 128 ] ;
+PageTableEntry pageTable[ NUM_FRAMES ] ;
 
 // Physical memory (Array of PhysicalMemoryPage)
 PhysicalMemoryPage physicalMemory[ NUM_FRAMES ];        // physical memory is 
@@ -61,14 +60,14 @@ PhysicalMemoryPage physicalMemory[ NUM_FRAMES ];        // physical memory is
 
 // FIFO Queue for page replacement
 // FIFO Queue for page replacement
-// int fifoQueue[256]; // Updated to match the physical memory size
+int fifoQueue[PAGE_SIZE]; // Updated to match the physical memory size
 
 // Initialize the FIFO queue
-// void initializeFIFOQueue() {
-//     for (int i = 0; i < 256; i++) {
-//         fifoQueue[i] = -1; // Initialize with -1 to indicate empty slots
-//     }
-// }
+void initializeFIFOQueue() {
+    for (int i = 0; i < PAGE_SIZE; i++) {
+        fifoQueue[i] = -1; // Initialize with -1 to indicate empty slots
+    }
+}
 
 void init_q(queue *q) {
     q -> head = NULL;
@@ -146,7 +145,7 @@ void initializeTables() {
     }
 
     // initializing the page table
-    for (int i = 0; i < 128; i++) {
+    for (int i = 0; i < NUM_FRAMES; i++) {
         pageTable[i].valid = false;
         pageTable[i].frameNumber = 0;
     }
@@ -197,10 +196,10 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
     // this array variable is not being used right here and the code works withought it
     // use this, get the value from physical memory/backing store into here,
 
-    // bool loadedPages[PAGE_SIZE];
-    // for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
-    //     loadedPages[i] = false;
-    // }
+    bool loadedPages[PAGE_SIZE];
+    for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
+        loadedPages[i] = false;
+    }
     //   ****************************************************************
 
 
@@ -263,7 +262,7 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
                     pageTable[pageNumber].frameNumber = frameNumber;
                     pageTable[pageNumber].valid = true;
 
-                    // printf("In fifo call i %d\n", k);
+                    //printf("In fifo call i %d\n", k);
                     en_q(fifoQueue, frameNumber);
                 }
 
@@ -309,13 +308,13 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
             // printf("Updating TBL w/ pageNumber %d\n", pageNumber);
             // printf("here w/ frameNumber %d\n", frameNumber);
 
+            updateTLB(pageNumber, frameNumber);
             // printf("tblPointer %d\n", tlbPointer);
             // printf("\tvalue of frameNumber %d\n", frameNumber);
 
 
             // updateFIFOQueue(pageQueue, &queuePointer, pageNumber);
 
-            updateTLB(pageNumber, frameNumber);
         }
 
         // Use the frame number and offset to access physical memory and retrieve the value.
@@ -390,8 +389,7 @@ int main(int argc, char* argv[]) {
     // Allocate array
     logicalAddresses = (int*)malloc(capacity * sizeof(int));
     // FRAMES = (int *)malloc(sizeof(int) * NUM_FRAMES);
-    queue fifoOldest;
-
+    queue oldest;
 
 
     // Read file
@@ -418,16 +416,17 @@ int main(int argc, char* argv[]) {
     initializeTables();
 
     // Initialize Page Table (if required).
-    // initializeFIFOQueue();
-    init_q(&fifoOldest);
-
+    initializeFIFOQueue();
+    init_q(&oldest);
 
     // Translate logical addresses and retrieve values.
-    translateAddresses(logicalAddresses, addressCount, &fifoOldest);
+    translateAddresses(logicalAddresses, addressCount, &oldest);
 
+    double pageFaultRatio = (pageFaults / (double)addressCount);
+    double tlbHitRatio = (tlbHits / (double)addressCount);
     // Print statistics
-    printf("Page Faults: %d / %d\n", pageFaults, addressCount);
-    printf("TLB Hits: %d / %d\n", tlbHits, addressCount);
+    printf("Page Faults: %d / %d, %0.3f\n", pageFaults, addressCount, pageFaultRatio);
+    printf("TLB Hits: %d / %d, %0.3f\n", tlbHits, addressCount, tlbHitRatio);
 
     // Clean up resources.
     free(logicalAddresses);
