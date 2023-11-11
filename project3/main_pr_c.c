@@ -215,6 +215,7 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
     int pageNumber;     // always less than 256
     int offset;
     int oldestPage;
+    int useThis;
 
 
 
@@ -223,11 +224,12 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
 
     for (int k = 0; k < addressCount; k++) {
 
-        
-        printf("I got here for logicalAddress = %d\n", logicalAddress);
-        // for (int k = 0; k < addressCount; k++){
-        //     printf("%d\n", logicalAddresses[k]);
-        // }
+        useThis = logicalAddresses[k];
+        printf("I got here for k = %d\n", k);
+        for (int i = 0; i < addressCount; i++){
+            printf("%d\n", useThis);
+            useThis = logicalAddresses[i];
+        }
 
         logicalAddress = logicalAddresses[k];
         pageNumber = (logicalAddress >> 8) & 0xFF;
