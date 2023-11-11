@@ -29,7 +29,7 @@ typedef struct {
 
 // Physical memory data structure
 typedef struct {
-    char data[PAGE_SIZE]; // Data stored in a page (256 bytes)
+    char data[FRAME_SIZE]; // Data stored in a page (256 bytes)
     int used;
 } PhysicalMemoryPage;
 
@@ -209,7 +209,7 @@ void translateAddresses(int* logicalAddresses, int addressCount)
             updateTLB(pageNumber, frameNumber);
             // printf("tblPointer %d\n", tlbPointer);
             
-            pageQueue[queuePointer] = pageNumber; //updatePageQueue
+            pageQueue[queuePointer - 1] = pageNumber; //updatePageQueue
         }
 
         // Use the frame number and offset to access physical memory and retrieve the value.
@@ -236,8 +236,6 @@ void translateAddresses(int* logicalAddresses, int addressCount)
     }
 
 
-
-
     FILE* fp4 = fopen("random_file.txt", "wt");
 
     for (int i = 0; i < FRAME_SIZE; i++)
@@ -245,11 +243,6 @@ void translateAddresses(int* logicalAddresses, int addressCount)
         fprintf(fp4, "%d\n", physicalMemory[i].used );
 
     }
-
-
-
-
-
 
 
     // Close files
