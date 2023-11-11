@@ -112,17 +112,6 @@ void updateFIFOQueue(int* pageQueue, int* queuePointer, int pageNumber) {
     pageQueue[*queuePointer] = pageNumber;
 }
 
-//finds oldest page
-int findOldestPage(int* pageQueue, int queuePointer) {
-    int oldestPage = pageQueue[0];
-    //remove oldest page
-    for (int i = 1; i < queuePointer; i++) {
-        pageQueue[i - 1] = pageQueue[i];
-    }
-    return oldestPage;
-}
-
-
 // initialize tlb and page table
 void initializeTables() {
     // initializing the TLB
