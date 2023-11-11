@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define FRAME_SIZE 32
+#define FRAME_SIZE 256
 #define PAGE_SIZE 256
 #define PAGE_TABLE_SIZE 256
 #define TLB_SIZE 16
-#define PHYSICAL_MEMORY_SIZE (PAGE_SIZE * PAGE_TABLE_SIZE * FRAME_SIZE)
+#define PHYSICAL_MEMORY_SIZE 65536
 #define BACKING_STORE_FILE "BACKING_STORE.bin"
 
 int pageFaults = 0;
@@ -40,7 +40,7 @@ PageTableEntry pageTable[PAGE_TABLE_SIZE];
 // Physical memory (Array of PhysicalMemoryPage)
 PhysicalMemoryPage physicalMemory[PHYSICAL_MEMORY_SIZE];
 
-// Function to initialize the TLB.
+//initialize the TLB
 void initializeTLB()
 {
     for (int i = 0; i < TLB_SIZE; i++)
@@ -49,7 +49,7 @@ void initializeTLB()
     }
 }
 
-// Function to check if a TLB entry exists for a page number.
+//check for tlb hit
 bool isTLBHit(int pageNumber)
 {
     for (int i = 0; i < TLB_SIZE; i++)
@@ -62,7 +62,7 @@ bool isTLBHit(int pageNumber)
         return false;
 }
 
-// Function to get a frame number from the TLB for a page number.
+// get a frame number from the TLB for a page number
 int getFrameFromTLB(int pageNumber)
 {
     for (int i = 0; i < TLB_SIZE; i++)
@@ -75,10 +75,10 @@ int getFrameFromTLB(int pageNumber)
         return -1; // Not found in the TLB
 }
 
-// Function to update the TLB.
+//update the TLB
 void updateTLB(int pageNumber, int frameNumber)
 {
-    // Implement TLB update using FIFO policy.
+    // Implement TLB update using FIFO policy
         TLB[tlbPointer].pageNumber = pageNumber;
         TLB[tlbPointer].frameNumber = frameNumber;
         TLB[tlbPointer].valid = true;
@@ -87,7 +87,7 @@ void updateTLB(int pageNumber, int frameNumber)
         tlbPointer = (tlbPointer + 1) % TLB_SIZE;
 }
 
-// Function to translate logical addresses to physical addresses and retrieve values.
+//translate logical addresses to physical addresses and retrieve values
 void translateAddresses(int* logicalAddresses, int addressCount)
 {
     //open files
@@ -101,20 +101,18 @@ void translateAddresses(int* logicalAddresses, int addressCount)
 
         // shifting the address by 8 to the right and masking the rightmost 8 bits
         int pageNumber = (logicalAddress >> 8) & 0xFF;
-        // masking the rightmost 8 bits
         int offset = logicalAddress & 0xFF;
         int frameNumber = -1;
 
         if (isTLBHit(pageNumber))
         {
-            // TLB hit: Get the frame number from the TLB.
+            // TLB hit
             frameNumber = getFrameFromTLB(pageNumber);
             tlbHits++;
         }
         else
         {
-            // TLB miss: You'll need to consult the page table and handle page faults.
-            // Implement the logic for page table lookup and page faults here.
+            // TLB miss
             
             // Check if the page is in physical memory. If not, handle page fault.
             if (pageTable[pageNumber].valid)
@@ -124,7 +122,7 @@ void translateAddresses(int* logicalAddresses, int addressCount)
             else
             {
                 // Page fault: Read the page from BACKING_STORE.bin into physical memory.
-                frameNumber = PAGE_TABLE_SIZE; // The page table size serves as the next available frame.
+                frameNumber = PAGE_TABLE_SIZE;
                 fseek(backingStore, pageNumber * PAGE_SIZE, SEEK_SET);
                 fread(physicalMemory[frameNumber].data, sizeof(char), PAGE_SIZE, backingStore);
                 pageTable[pageNumber].valid = true;
@@ -132,8 +130,7 @@ void translateAddresses(int* logicalAddresses, int addressCount)
                 pageFaults++;
             }
 
-            // Update the TLB with the new entry (updateTLB) if a page fault didn't occur.
-            // THIS WILL BE REACHED REGARDLESS OF A PAGE FAULT
+            // Update the TLB with the new entry (updateTLB) if a page fault didn't occur
             updateTLB(pageNumber, frameNumber);
         }
 
