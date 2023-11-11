@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define VIRTUAL_ADDRESS_SIZE 65536
+#define FRAME_SIZE 32
 #define PAGE_SIZE 256
 #define PAGE_TABLE_SIZE 256
 #define TLB_SIZE 16
-#define PHYSICAL_MEMORY_SIZE (PAGE_SIZE * PAGE_TABLE_SIZE)
+#define PHYSICAL_MEMORY_SIZE (PAGE_SIZE * PAGE_TABLE_SIZE * FRAME_SIZE)
 #define BACKING_STORE_FILE "BACKING_STORE.bin"
 
 int pageFaults = 0;
@@ -28,7 +28,7 @@ typedef struct {
 
 // Physical memory data structure
 typedef struct {
-    char data[PAGE_SIZE]; // Data stored in a page (256 bytes)
+    char data[FRAME_SIZE]; // Data stored in a page (256 bytes)
 } PhysicalMemoryPage;
 
 // TLB (Array of TLBEntry)

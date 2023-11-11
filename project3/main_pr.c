@@ -250,7 +250,7 @@ void translateAddresses(int* logicalAddresses, int addressCount)
 
 int main(int argc, char* argv[])
 {
-    char* filename = "addresses.txt";
+    char* filename = argv[1];
     int* logicalAddresses = NULL;
     int addressCount = 0;
     int capacity = 10;
