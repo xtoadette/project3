@@ -3,17 +3,18 @@
 #include <stdbool.h>
 
 #define VIRTUAL_ADDRESS_SIZE 65536
-#define FRAME_SIZE 128                   // change number of required frames here
+#define NUM_FRAMES 128                   // change number of required frames here
 #define PAGE_SIZE 256
 #define PAGE_TABLE_SIZE 256
 #define TLB_SIZE 16
-#define PHYSICAL_MEMORY_SIZE (PAGE_SIZE * FRAME_SIZE) // 128 frames
+#define PHYSICAL_MEMORY_SIZE (PAGE_SIZE * NUM_FRAMES) // 128 frames
 #define BACKING_STORE_FILE "BACKING_STORE.bin"
 
 int pageFaults = 0;
 int tlbHits = 0;
 int tlbPointer = 0; // for updateTLB function
 int fifoPointer = 0; // for FIFO page replacement
+// int * FRAMES;
 
 // TLB data structure
 typedef struct {
@@ -31,8 +32,21 @@ typedef struct {
 // Physical memory data structure
 typedef struct {
     char data[ PAGE_SIZE ]; // Data stored in a page (256 bytes)
-    int used;
+    // int used;
 } PhysicalMemoryPage;
+
+typedef struct node {
+    int value;
+    struct node *next;
+} node;
+
+typedef struct{
+    node *head;
+    node *tail;
+} queue;
+
+
+
 
 // TLB (Array of TLBEntry)
 TLBEntry TLB[ TLB_SIZE ];
@@ -41,7 +55,7 @@ TLBEntry TLB[ TLB_SIZE ];
 PageTableEntry pageTable[ PAGE_TABLE_SIZE ] ;
 
 // Physical memory (Array of PhysicalMemoryPage)
-PhysicalMemoryPage physicalMemory[ FRAME_SIZE ];        // physical memory is 
+PhysicalMemoryPage physicalMemory[ NUM_FRAMES ];        // physical memory is 
                                                         // the number of frames itself
 
 
@@ -54,6 +68,51 @@ void initializeFIFOQueue() {
     for (int i = 0; i < 256; i++) {
         fifoQueue[i] = -1; // Initialize with -1 to indicate empty slots
     }
+}
+
+void init_q(queue *q) {
+    q -> head = NULL;
+    q -> tail = NULL;
+
+}
+
+void en_q (queue *q, int value){
+    // new node is created and initialized with the given value
+    node * new_n = malloc(sizeof(node));
+    new_n -> value = value;
+    new_n -> next = NULL;
+
+    // the node is attached at the end of the queue
+    if (q -> tail != NULL)
+        q -> tail -> next = new_n;
+    
+
+    q -> tail = new_n;
+
+
+    // checking if the head was not already asigned
+    if (q -> head == NULL)
+        q -> head = new_n;
+}
+
+
+
+
+
+
+int de_q (queue *q){
+
+    node *tmp = q -> head;
+
+    int result = tmp -> value;
+
+    q -> head = q -> head -> next;
+
+    if (q -> head == NULL)
+        q -> tail = NULL;
+
+    free (tmp);
+    return result;
 }
 
 // Function to update the FIFO queue.
@@ -125,7 +184,7 @@ void updateTLB(int pageNumber, int frameNumber) {
     tlbPointer = (tlbPointer + 1) % TLB_SIZE;
 }
 
-void translateAddresses(int* logicalAddresses, int addressCount) {
+void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueue) {
     // Open files
     FILE* fp1 = fopen("out1.txt", "wt");
     FILE* fp2 = fopen("out2.txt", "wt");
@@ -149,20 +208,28 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
     int pageQueue[PAGE_TABLE_SIZE]; // FIFO queue to track loaded pages
     int queuePointer = 0;           // Pointer to the front of the queue, tied to pageNumber
     int physicalAddress;            // not being used
-    int max_address = 0;
+    // int max_address = 0;         //NOT NEEDED
 
 
     int logicalAddress;
     int pageNumber;     // always less than 256
     int offset;
+    int oldestPage;
 
 
 
 
 
-    for (int i = 0; i < addressCount; i++) {
 
-        logicalAddress = logicalAddresses[i];
+    for (int k = 0; k < addressCount; k++) {
+
+        
+        printf("I got here for logicalAddress = %d\n", logicalAddress);
+        // for (int k = 0; k < addressCount; k++){
+        //     printf("%d\n", logicalAddresses[k]);
+        // }
+
+        logicalAddress = logicalAddresses[k];
         pageNumber = (logicalAddress >> 8) & 0xFF;
         offset = logicalAddress & 0xFF;
 
@@ -185,27 +252,36 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
                 // printf("I was here! for pageNumber %d\n", pageNumber);
             } 
             else {
+                pageFaults++;
 
 
                 // Page fault: Find an available frame for the new page
-                frameNumber = -1;
+                if (pageTable[pageNumber].valid == false){
+                    frameNumber = k;
+                    pageTable[pageNumber].frameNumber = frameNumber;
+                    en_q(fifoQueue, frameNumber);
+                }
 
-                if (queuePointer < ( FRAME_SIZE ) ) {
+                // if (queuePointer < NUM_FRAMES ) {       // filling in the table
 
-                    // printf("In here\n");
-                    frameNumber = queuePointer;
-                    queuePointer++;
-                } else {
+                //     // printf("In here\n");
+                //     frameNumber = queuePointer;
+                //     queuePointer++;
+                // } 
+                else {
                     // Apply FIFO page replacement to find the oldest page to replace
                     // printf("The FIFO getting called at i = %d\n", i);
-                    int oldestPage = findOldestPage(pageQueue, queuePointer);
+                    // oldestPage = findOldestPage(pageQueue, queuePointer);
+                    oldestPage = de_q(fifoQueue);
+                    en_q(fifoQueue, oldestPage);
+
                     frameNumber = pageTable[oldestPage].frameNumber;
                 }
 
 
 
                 pageQueue[queuePointer - 1] = pageNumber; // Add the new page to the queue
-                printf("value of queuePointer %d\n", queuePointer);
+                // printf("value of frameNumber %d\n", frameNumber);
 
 
                 fseek(backingStore, pageNumber * PAGE_SIZE, SEEK_SET);
@@ -220,8 +296,8 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
                 // printf("\tI got here two\n");
 
                 pageTable[pageNumber].valid = true;
+                // printf("the frame numeber %d\n", frameNumber);
                 pageTable[pageNumber].frameNumber = frameNumber;
-                pageFaults++;
 
             }
 
@@ -231,6 +307,7 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
 
             updateTLB(pageNumber, frameNumber);
             // printf("tblPointer %d\n", tlbPointer);
+            // printf("\tvalue of frameNumber %d\n", frameNumber);
 
 
             updateFIFOQueue(pageQueue, &queuePointer, pageNumber);
@@ -238,28 +315,34 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
         }
 
         // Use the frame number and offset to access physical memory and retrieve the value.
+        // printf("Trouble heren\n");
         physicalAddress = frameNumber * PAGE_SIZE + offset;
         // printf("physicalAddress %d\n", physicalAddress);
+        // printf("\tTrouble heren\n");
 
 
-        // printf("\tI got here\n");
+
         signed char value = physicalMemory[frameNumber].data[offset];
-        // printf("\tI got here two\n");
         // printf("memory access @ frameNumber %d\n", frameNumber);
 
-        physicalMemory[frameNumber].used = 1;
+        // physicalMemory[frameNumber].used = 1;
 
         // printf("\tmemory access @ frameNumber %d\n", frameNumber);
 
-        if (frameNumber > max_address)
-            max_address = frameNumber;
+        // if (frameNumber > max_address)
+        //     max_address = frameNumber;
 
         // Save to files
+        printf("I got here\n");
+
+
         fprintf(fp1, "%d\n", logicalAddress);
         fprintf(fp2, "%d\n", physicalAddress);
         // printf("\tI got here for i = %d\t%d\n", i, value);
 
         fprintf(fp3, "%d\n", value);
+        printf("\tI got here two\n");
+
         // printf("I got here for i = %d\t%d\n", i, value);
 
     }
@@ -267,14 +350,14 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
 
 
 
-    FILE* fp4 = fopen("random_file.txt", "wt");
+    // FILE* fp4 = fopen("random_file.txt", "wt");
 
-    // printf("i got here\n");
-    for (int i = 0; i < FRAME_SIZE; i++){
-        fprintf(fp4, "%d\n", physicalMemory[i].used );
+    // // printf("i got here\n");
+    // for (int i = 0; i < NUM_FRAMES; i++){
+    //     fprintf(fp4, "%d\n", physicalMemory[i].used );
 
-    }
-    // printf("i got here two\n");
+    // }
+    // // printf("i got here two\n");           THIS IS NOT LONGER NEEDED BECAUSE "used" IS NOT NEEDED
 
 
 
@@ -287,10 +370,10 @@ void translateAddresses(int* logicalAddresses, int addressCount) {
     fclose(fp1);
     fclose(fp2);
     fclose(fp3);
-    fclose(fp4);
+    // fclose(fp4);
     fclose(backingStore);
 
-    printf("\n******* The greatest frameNumber was %d\n", max_address);
+    // printf("\n******* The greatest frameNumber was %d\n", max_address);
 }
 
 int main(int argc, char* argv[]) {
@@ -304,6 +387,9 @@ int main(int argc, char* argv[]) {
 
     // Allocate array
     logicalAddresses = (int*)malloc(capacity * sizeof(int));
+    // FRAMES = (int *)malloc(sizeof(int) * NUM_FRAMES);
+    queue oldest;
+
 
     // Read file
     int num;
@@ -330,9 +416,10 @@ int main(int argc, char* argv[]) {
 
     // Initialize Page Table (if required).
     initializeFIFOQueue();
+    init_q(&oldest);
 
     // Translate logical addresses and retrieve values.
-    translateAddresses(logicalAddresses, addressCount);
+    translateAddresses(logicalAddresses, addressCount, &oldest);
 
     // Print statistics
     printf("Page Faults: %d / %d\n", pageFaults, addressCount);
