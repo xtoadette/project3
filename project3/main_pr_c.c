@@ -52,7 +52,7 @@ typedef struct{
 TLBEntry TLB[ TLB_SIZE ];
 
 // Page table (Array of PageTableEntry)
-PageTableEntry pageTable[ PAGE_TABLE_SIZE ] ;
+PageTableEntry pageTable[ 128 ] ;
 
 // Physical memory (Array of PhysicalMemoryPage)
 PhysicalMemoryPage physicalMemory[ NUM_FRAMES ];        // physical memory is 
@@ -146,7 +146,7 @@ void initializeTables() {
     }
 
     // initializing the page table
-    for (int i = 0; i < PAGE_TABLE_SIZE; i++) {
+    for (int i = 0; i < 128; i++) {
         pageTable[i].valid = false;
         pageTable[i].frameNumber = 0;
     }
@@ -261,6 +261,9 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
                 if (pageTable[pageNumber].valid == false){
                     frameNumber = k % NUM_FRAMES;
                     pageTable[pageNumber].frameNumber = frameNumber;
+                    pageTable[pageNumber].valid = true;
+
+                    printf("In fifo call i %d\n", k);
                     en_q(fifoQueue, frameNumber);
                 }
 
@@ -282,22 +285,21 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
 
 
 
-                pageQueue[queuePointer - 1] = pageNumber; // Add the new page to the queue
+                // pageQueue[queuePointer - 1] = pageNumber; // Add the new page to the queue
                 // printf("value of frameNumber %d\n", frameNumber);
 
 
                 fseek(backingStore, pageNumber * PAGE_SIZE, SEEK_SET);
-                printf("\tI got here\n");
+                // printf("\tI got here\n");
 
                 // printf("memory access @ frameNumber %d\n", frameNumber);
 
                 // printf("\tdata %s\n", physicalMemory[frameNumber].data);
-                printf("\t\tframeNumber %d\n", frameNumber);
+                // printf("\t\tframeNumber %d\n", frameNumber);
 
                 fread(physicalMemory[frameNumber].data, sizeof(char), PAGE_SIZE, backingStore);
-                printf("\tI got here two\n");
+                // printf("\tI got here two\n");
 
-                pageTable[pageNumber].valid = true;
                 // printf("the frame numeber %d\n", frameNumber);
                 pageTable[pageNumber].frameNumber = frameNumber;
 
@@ -312,7 +314,7 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
             // printf("\tvalue of frameNumber %d\n", frameNumber);
 
 
-            updateFIFOQueue(pageQueue, &queuePointer, pageNumber);
+            // updateFIFOQueue(pageQueue, &queuePointer, pageNumber);
 
         }
 
@@ -343,7 +345,7 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
 
         fprintf(fp3, "%d\n", value);
 
-        printf("I got here for i = %d\t%d\n", k, value);
+        // printf("I got here for i = %d\t%d\n", k, value);
 
     }
 
