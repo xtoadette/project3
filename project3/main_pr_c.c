@@ -225,11 +225,11 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
     for (int k = 0; k < addressCount; k++) {
 
         useThis = logicalAddresses[k];
-        printf("I got here for k = %d\n", k);
-        for (int i = 0; i < addressCount; i++){
-            printf("%d\n", useThis);
-            useThis = logicalAddresses[i];
-        }
+        // printf("I got here for k = %d\n", k);
+        // for (int i = 0; i < addressCount; i++){
+        //     printf("%d\n", useThis);
+        //     useThis = logicalAddresses[i];
+        // }
 
         logicalAddress = logicalAddresses[k];
         pageNumber = (logicalAddress >> 8) & 0xFF;
@@ -259,7 +259,7 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
 
                 // Page fault: Find an available frame for the new page
                 if (pageTable[pageNumber].valid == false){
-                    frameNumber = k;
+                    frameNumber = k % NUM_FRAMES;
                     pageTable[pageNumber].frameNumber = frameNumber;
                     en_q(fifoQueue, frameNumber);
                 }
@@ -287,15 +287,15 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
 
 
                 fseek(backingStore, pageNumber * PAGE_SIZE, SEEK_SET);
-                // printf("\tI got here\n");
+                printf("\tI got here\n");
 
                 // printf("memory access @ frameNumber %d\n", frameNumber);
 
                 // printf("\tdata %s\n", physicalMemory[frameNumber].data);
-                // printf("\tframeNumber %d\n", frameNumber);
+                printf("\t\tframeNumber %d\n", frameNumber);
 
                 fread(physicalMemory[frameNumber].data, sizeof(char), PAGE_SIZE, backingStore);
-                // printf("\tI got here two\n");
+                printf("\tI got here two\n");
 
                 pageTable[pageNumber].valid = true;
                 // printf("the frame numeber %d\n", frameNumber);
@@ -335,7 +335,6 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
         //     max_address = frameNumber;
 
         // Save to files
-        printf("I got here\n");
 
 
         fprintf(fp1, "%d\n", logicalAddress);
@@ -343,9 +342,8 @@ void translateAddresses(int* logicalAddresses, int addressCount, queue *fifoQueu
         // printf("\tI got here for i = %d\t%d\n", i, value);
 
         fprintf(fp3, "%d\n", value);
-        printf("\tI got here two\n");
 
-        // printf("I got here for i = %d\t%d\n", i, value);
+        printf("I got here for i = %d\t%d\n", k, value);
 
     }
 
